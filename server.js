@@ -1,36 +1,68 @@
-const express = require("express");
-const cors = require("cors");
-const app = express();
+// =============================
+// CONFIG
+// =============================
+const API_URL = "https://smart-library-backend-83ly.onrender.com"; 
+// Replace with your backend URL
 
-app.use(cors());
-app.use(express.json());
 
-let seatData = {
-  A1: "free",
-  A2: "free",
-  A3: "free",
-  A4: "free",
-  B1: "free",
-  B2: "free",
-  B3: "free",
-  B4: "free"
-};
+// ----------------------------
+// Load seat data from backend
+// ----------------------------
+async function loadSeats() {
+    try {
+        const response = await fetch(`${API_URL}/seats`);
+        const data = await response.json();
+        updateSeatColors(data);
+        updateStats(data);
+    } catch (error) {
+        console.error("Error loading seats:", error);
+    }
+}
 
-// ESP32 sends seat status
-app.post("/update", (req, res) => {
-  seatData = req.body;
-  console.log("Updated seat data:", seatData);
-  res.send("OK");
-});
 
-// Website fetches seat status
-app.get("/seats", (req, res) => {
-  res.json(seatData);
-});
+// ----------------------------
+// Update seat colors on UI
+// ----------------------------
+function updateSeatColors(seats) {
+    Object.keys(seats).forEach(seatId => {
+        const seatElement = document.getElementById(seatId);
+        if (!seatElement) return;
 
-app.get("/", (req, res) => {
-  res.send("Smart Library Backend Running");
-});
+        const status = seats[seatId];
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server running on port " + PORT));
+        if (status === "Free") {
+            seatElement.style.background = "#4CAF50"; 
+        } else if (status === "Occupied") {
+            seatElement.style.background = "#F44336";
+        } else if (status === "Reserved") {
+            seatElement.style.background = "#FFC107";
+        }
+    });
+}
+
+
+// ----------------------------
+// Update Stats Section
+// ----------------------------
+function updateStats(seats) {
+    let free = 0, occupied = 0, reserved = 0;
+
+    Object.values(seats).forEach(state => {
+        if (state === "Free") free++;
+        else if (state === "Occupied") occupied++;
+        else if (state === "Reserved") reserved++;
+    });
+
+    document.getElementById("freeCount").textContent = free;
+    document.getElementById("occupiedCount").textContent = occupied;
+    document.getElementById("reservedCount").textContent = reserved;
+}
+
+
+// ----------------------------
+// Auto Refresh every 3 seconds
+// ----------------------------
+setInterval(loadSeats, 3000);
+
+// Initial load
+loadSeats();
