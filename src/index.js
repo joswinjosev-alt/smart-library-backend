@@ -1,34 +1,35 @@
 const express = require("express");
-const app = express();
+const cors = require("cors");
 
-// Allow all origins so ESP32 and frontend can access
-app.use(require("cors")());
+const app = express();
+app.use(cors());
 app.use(express.json());
 
-// Temporary seat data
-let seatStatus = {
-  A1: "free",
-  A2: "free",
-  A3: "free",
-  A4: "free",
-  B1: "free",
-  B2: "free",
-  B3: "free",
-  B4: "free"
+// Initial dummy seat data (will update from ESP32)
+let seats = {
+  "A1": "free",
+  "A2": "free",
+  "A3": "free",
+  "A4": "free",
+  "B1": "free",
+  "B2": "free",
+  "B3": "free",
+  "B4": "free"
 };
 
-// GET for frontend
+// Route for frontend to get seat status
 app.get("/seats", (req, res) => {
-  res.json(seatStatus);
+  res.json(seats);
 });
 
-// POST for ESP32 to update seat data
+// Route for ESP32 to update seat status
 app.post("/update", (req, res) => {
-  seatStatus = req.body;
-  console.log("Updated:", seatStatus);
+  console.log("Update Received:", req.body);
+  seats = { ...seats, ...req.body };
   res.json({ success: true });
 });
 
-// Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server running on port", PORT));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
